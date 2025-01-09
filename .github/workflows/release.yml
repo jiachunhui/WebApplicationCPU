@@ -1,39 +1,40 @@
-name: Build and Release WebCPU for CentOS
+name: Release
 
 on:
   release:
-    types: [published]  # 当发布（Release）被创建时触发
+    types: [published]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # 使用 Ubuntu 作为构建环境
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3  # 检出代码
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3  # 设置 .NET Core 环境
-        with:
-          dotnet-version: '6.0.x'  # 指定 .NET 6 版本
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore  # 恢复依赖
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Build the project
-        run: dotnet build --configuration Release  # 构建项目
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
 
-      - name: Publish the project
-        run: dotnet publish -c Release -o ./publish --framework net6.0 --runtime linux-x64  # 独立部署，针对 Linux x64
+    - name: Publish
+      run: dotnet publish --configuration Release --no-build --output ./publish
 
-      - name: Create tar.gz archive
-        run: |
-          tar -czvf webcpu_centos.tar.gz -C ./publish .  # 将发布文件夹打包为 webcpu_centos.tar.gz
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dotnet-app
+        path: ./publish
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1  # 将打包文件附加到 Release
-        with:
-          upload_url: ${{ github.event.release.upload_url }}  # 上传 URL
-          asset_path: ./webcpu_centos.tar.gz  # 打包文件路径
-          asset_name: webcpu_centos.tar.gz  # 打包文件名称
-          asset_content_type: application/gzip  # 文件类型
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'webcpu'  # 替换为您的 Azure Web App 名称
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}  # 确保在 GitHub Secrets 中添加此密钥
+        package: ./publish
