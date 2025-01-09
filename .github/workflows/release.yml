@@ -1,0 +1,39 @@
+name: Build and Release WebCPU
+
+on:
+  release:
+    types: [published]  # 当发布（Release）被创建时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 作为构建环境
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3  # 检出代码
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3  # 设置 .NET Core 环境
+        with:
+          dotnet-version: '6.0.x'  # 指定 .NET 6 版本
+
+      - name: Restore dependencies
+        run: dotnet restore  # 恢复依赖
+
+      - name: Build the project
+        run: dotnet build --configuration Release  # 构建项目
+
+      - name: Publish the project
+        run: dotnet publish -c Release -o ./publish --framework net6.0 --runtime portable  # 发布项目，框架依赖，可移植
+
+      - name: Zip the publish folder
+        run: |
+          zip -r webcpu_release.zip ./publish/*  # 将发布文件夹打包为 webcpu_release.zip
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1  # 将打包文件附加到 Release
+        with:
+          upload_url: ${{ github.event.release.upload_url }}  # 上传 URL
+          asset_path: ./webcpu_release.zip  # 打包文件路径
+          asset_name: webcpu_release.zip  # 打包文件名称
+          asset_content_type: application/zip  # 文件类型
