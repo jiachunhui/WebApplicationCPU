@@ -24,7 +24,7 @@ jobs:
         run: dotnet build --configuration Release  # 构建项目
 
       - name: Publish the project
-        run: dotnet publish -c Release -o ./publish --framework net6.0 --runtime portable  # 发布项目，框架依赖，可移植
+        run: dotnet publish -c Release -o ./publish --framework net6.0  # 发布项目，框架依赖
 
       - name: Zip the publish folder
         run: |
